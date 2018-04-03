@@ -191,13 +191,16 @@ class pySFTPPush():
             #Chuck old messages
             if len(self.msgBuffer) >= self.messageh:
                 self.msgBuffer = \
-                    self.msgBuffer[-self.messageh:]
+                    self.msgBuffer[-(self.messageh-1):]
 
             for i,msg in enumerate(self.msgBuffer):
                 if len(msg) >= self.messagew:
                     msg = msg[:self.messagew-1]
-                self.msgbox.addstr(i,0, msg[1].ljust(self.messagew-1),
-                    crs.color_pair(msg[0]) )
+                try:
+                    self.msgbox.addstr(i,0, msg[1].ljust(self.messagew-1),
+                        crs.color_pair(msg[0]) )
+                except:
+                    pass
             self.msgbox.refresh()
         else: # not using curses
             for i,msg in enumerate(self.msgBuffer):
