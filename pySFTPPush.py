@@ -428,11 +428,9 @@ class pySFTPPush():
         return False
 
     def ObserverLoop(self, stdscr):
+
         self.event_handler = SCPPushEventHandler(self.LocalPath,
             self.RemoteSSHName, self.RemotePath)
-        observer = Observer()
-        observer.schedule(self.event_handler, self.LocalPath, recursive=True)
-        observer.start()
 
         if not stdscr is None:
             self.StartWindow(stdscr)
@@ -443,6 +441,10 @@ class pySFTPPush():
         if self.InitPullAll:
             if not self.RunInitRSync():
                 raise RSyncFailureException()
+
+        observer = Observer()
+        observer.schedule(self.event_handler, self.LocalPath, recursive=True)
+        observer.start()
 
         self.StartConnection()
         self.PrintMessages()
