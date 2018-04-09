@@ -344,6 +344,7 @@ class pySFTPPush():
         self.topbar = crs.newwin(3,self.messagew,0,0)
         self.RefreshTitleBar()
         self.msgbox = crs.newwin(self.messageh, self.messagew,4,0)
+        stdscr.nodelay(1)
 
     def StartConnection(self):
         self.msgBuffer.append((2,"[INFO]: %s " % ["sftp", self.RemoteSSHName]))
@@ -456,8 +457,16 @@ class pySFTPPush():
                 if char == ord('q'):
                     raise KeyboardInterrupt
                 elif char == ord('i'):
+                    self.event_handler.mutex.acquire()
+                    observer.stop()
+                    observer.join()
                     if not self.RunInitRSync():
                         raise RSyncFailureException()
+                    self.event_handler.mutex.release()
+                    observer = Observer()
+                    observer.schedule(self.event_handler, self.LocalPath, recursive=True)
+                    observer.start()
+
 
                 self.BlinkerRow = (self.BlinkerRow + 1) % 3
                 if (not self.topbar is None):
