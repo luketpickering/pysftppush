@@ -451,6 +451,14 @@ class pySFTPPush():
 
         try:
             while True:
+
+                char = stdscr.getch()
+                if char == ord('q'):
+                    raise KeyboardInterrupt
+                elif char == ord('i'):
+                    if not self.RunInitRSync():
+                        raise RSyncFailureException()
+
                 self.BlinkerRow = (self.BlinkerRow + 1) % 3
                 if (not self.topbar is None):
                     self.RefreshTitleBar()
