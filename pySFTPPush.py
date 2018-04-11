@@ -158,7 +158,7 @@ class SCPPushEventHandler(FileSystemEventHandler):
             self.NCopyQueued += 1
 
 class pySFTPPush():
-    def __init__(self, LocalPath, RemoteSSHName, RemotePath, InitPullAll=False,
+    def __init__(self, LocalPath, RemoteSSHName, RemotePath, InitMode=0,
         ExtraRSyncOptions=""):
         self.LocalPath = LocalPath
         if self.LocalPath[-1] != '/':
@@ -181,7 +181,7 @@ class pySFTPPush():
         self.ReaderThread = None
         self.ReaderQueue = None
         self.BlinkerRow = -1
-        self.InitPullAll = InitPullAll
+        self.InitMode = InitMode
         self.ExtraRSyncOptions = ExtraRSyncOptions
 
     def PrintMessages(self):
@@ -379,8 +379,13 @@ class pySFTPPush():
         self.WaitForSFTPResponse()
 
     def RunInitRSync(self):
-        RSyncCmd = ["rsync", "-avz", "%s:%s" \
-            % (self.RemoteSSHName, self.RemotePath), self.LocalPath]
+        RSyncCmd = []
+        if self.InitMode == 1:
+            RSyncCmd = ["rsync", "-avz", "%s:%s" \
+                % (self.RemoteSSHName, self.RemotePath), self.LocalPath]
+        elif self.InitMode == 2:
+            RSyncCmd = ["rsync", "-avz", self.LocalPath, "%s:%s" \
+                % (self.RemoteSSHName, self.RemotePath)]
         RSyncCmd.extend(self.ExtraRSyncOptions)
         self.msgBuffer.append((2,"[INFO]: %s " % " ".join(RSyncCmd)) )
         self.PrintMessages()
@@ -439,7 +444,7 @@ class pySFTPPush():
             self.messageh = 48
             self.messagew = 80
 
-        if self.InitPullAll:
+        if self.InitMode != 0:
             if not self.RunInitRSync():
                 raise RSyncFailureException()
 
@@ -456,10 +461,11 @@ class pySFTPPush():
                 char = stdscr.getch()
                 if char == ord('q'):
                     raise KeyboardInterrupt
-                elif char == ord('i'):
+                elif (char == ord('i')) or (char == ord('p')):
                     self.event_handler.mutex.acquire()
                     observer.stop()
                     observer.join()
+                    self.InitMode = (1 if (char == ord('i')) else 2)
                     if not self.RunInitRSync():
                         raise RSyncFailureException()
                     self.event_handler.mutex.release()
@@ -536,7 +542,10 @@ if __name__ == "__main__":
     if len(sys.argv) == 4:
         evloop = pySFTPPush(sys.argv[1], sys.argv[2], sys.argv[3])
     elif sys.argv[4] == "-i":
-        evloop = pySFTPPush(sys.argv[1], sys.argv[2], sys.argv[3], True,
+        evloop = pySFTPPush(sys.argv[1], sys.argv[2], sys.argv[3], 1,
+            sys.argv[5:])
+    elif sys.argv[4] == "-p":
+        evloop = pySFTPPush(sys.argv[1], sys.argv[2], sys.argv[3], 2,
             sys.argv[5:])
     else:
         Usage()
